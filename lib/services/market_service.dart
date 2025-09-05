@@ -7,6 +7,11 @@ class ChartData {
   final double last;
   final double change;
   final double changePct;
+  // Optional OHLC for the current session (if available)
+  final double? open;
+  final double? dayHigh;
+  final double? dayLow;
+  final double? previousClose;
 
   ChartData({
     required this.times,
@@ -14,6 +19,10 @@ class ChartData {
     required this.last,
     required this.change,
     required this.changePct,
+    this.open,
+    this.dayHigh,
+    this.dayLow,
+    this.previousClose,
   });
 }
 
@@ -44,6 +53,9 @@ class MarketService {
     final indicators = result['indicators'];
     final quote = indicators['quote'][0];
     final closesRaw = (quote['close'] as List).map((e) => e?.toDouble()).toList();
+    final opensRaw = (quote['open'] as List?)?.map((e) => e?.toDouble()).toList();
+    final highsRaw = (quote['high'] as List?)?.map((e) => e?.toDouble()).toList();
+    final lowsRaw = (quote['low'] as List?)?.map((e) => e?.toDouble()).toList();
 
     // filter nulls while keeping alignment with timestamps
     final times = <DateTime>[];
@@ -62,6 +74,20 @@ class MarketService {
 
     final last = closes.last;
     final previousClose = (result['meta']['previousClose'] as num?)?.toDouble() ?? closes.first;
+    // Try to infer session OHLC from arrays if present
+    double? open;
+    double? high;
+    double? low;
+    if (opensRaw != null) {
+      open = opensRaw.firstWhere((e) => e != null, orElse: () => null);
+    }
+    if (highsRaw != null) {
+      high = highsRaw.whereType<double>().fold<double?>(null, (p, n) => p == null || n > p ? n : p);
+    }
+    if (lowsRaw != null) {
+      low = lowsRaw.whereType<double>().fold<double?>(null, (p, n) => p == null || n < p ? n : p);
+    }
+
     final change = last - previousClose;
     final changePct = previousClose == 0 ? 0 : (change / previousClose) * 100;
 
@@ -71,6 +97,10 @@ class MarketService {
       last: last,
       change: change,
       changePct: changePct.toDouble(),
+      open: open,
+      dayHigh: high,
+      dayLow: low,
+      previousClose: previousClose,
     );
   }
 
@@ -88,6 +118,12 @@ class MarketService {
     final changePct = (result['regularMarketChangePercent'] as num?)?.toDouble() ?? 0.0;
     final tsMs = ((result['regularMarketTime'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch ~/ 1000) * 1000;
     final name = (result['shortName'] as String?) ?? (result['longName'] as String?) ?? symbol;
+    final open = (result['regularMarketOpen'] as num?)?.toDouble();
+    final dayHigh = (result['regularMarketDayHigh'] as num?)?.toDouble();
+    final dayLow = (result['regularMarketDayLow'] as num?)?.toDouble();
+    final previousClose = (result['regularMarketPreviousClose'] as num?)?.toDouble();
+    final volume = (result['regularMarketVolume'] as num?)?.toInt();
+    final marketCap = (result['marketCap'] as num?)?.toDouble();
     return Quote(
       symbol: symbol,
       price: price,
@@ -95,6 +131,12 @@ class MarketService {
       changePct: changePct,
       name: name,
       time: DateTime.fromMillisecondsSinceEpoch(tsMs),
+      open: open,
+      dayHigh: dayHigh,
+      dayLow: dayLow,
+      previousClose: previousClose,
+      volume: volume,
+      marketCap: marketCap,
     );
   }
 
@@ -118,6 +160,12 @@ class MarketService {
       final name = (r['shortName'] as String?) ?? (r['longName'] as String?) ?? sym;
       final high52 = (r['fiftyTwoWeekHigh'] as num?)?.toDouble();
       final low52 = (r['fiftyTwoWeekLow'] as num?)?.toDouble();
+      final open = (r['regularMarketOpen'] as num?)?.toDouble();
+      final dayHigh = (r['regularMarketDayHigh'] as num?)?.toDouble();
+      final dayLow = (r['regularMarketDayLow'] as num?)?.toDouble();
+      final previousClose = (r['regularMarketPreviousClose'] as num?)?.toDouble();
+      final volume = (r['regularMarketVolume'] as num?)?.toInt();
+      final marketCap = (r['marketCap'] as num?)?.toDouble();
       return Quote(
         symbol: sym,
         name: name,
@@ -127,6 +175,12 @@ class MarketService {
         time: DateTime.fromMillisecondsSinceEpoch(tsMs),
         fiftyTwoWeekHigh: high52,
         fiftyTwoWeekLow: low52,
+        open: open,
+        dayHigh: dayHigh,
+        dayLow: dayLow,
+        previousClose: previousClose,
+        volume: volume,
+        marketCap: marketCap,
       );
     }).toList();
   }
@@ -154,6 +208,12 @@ class Quote {
   final DateTime time;
   final double? fiftyTwoWeekHigh;
   final double? fiftyTwoWeekLow;
+  final double? open;
+  final double? dayHigh;
+  final double? dayLow;
+  final double? previousClose;
+  final int? volume;
+  final double? marketCap;
   Quote({
     required this.symbol,
     required this.price,
@@ -163,5 +223,11 @@ class Quote {
     this.name,
     this.fiftyTwoWeekHigh,
     this.fiftyTwoWeekLow,
+    this.open,
+    this.dayHigh,
+    this.dayLow,
+    this.previousClose,
+    this.volume,
+    this.marketCap,
   });
 }
