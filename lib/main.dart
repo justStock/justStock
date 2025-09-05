@@ -4,8 +4,10 @@ import 'screens/home/home_page.dart';
 import 'screens/wallet/wallet_page.dart';
 import 'screens/advice/advice_page.dart';
 import 'services/otp_service.dart';
+import 'services/otp_service_rest.dart';
 import 'screens/auth/otp_page.dart';
 import 'config.dart';
+import 'screens/market/detail_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -79,6 +81,7 @@ class MyApp extends StatelessWidget {
         HomePage.routeName: (_) => const HomePage(),
         WalletPage.routeName: (_) => const WalletPage(),
         AdvicePage.routeName: (_) => const AdvicePage(),
+        MarketDetailPage.routeName: (_) => const MarketDetailPage(),
       },
     );
   }
@@ -155,7 +158,7 @@ class _AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final OtpService _otpService = MockOtpService();
+  late final OtpService _otpService;
 
   get children => null;
 
@@ -164,6 +167,17 @@ class _AuthPageState extends State<AuthPage> {
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Choose OTP backend
+    if (!kBypassOtp && kUseRestOtp) {
+      _otpService = RestOtpService();
+    } else {
+      _otpService = MockOtpService();
+    }
   }
 
   Future<void> _continue() async {

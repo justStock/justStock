@@ -61,13 +61,7 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(child: _promoCard(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(child: _sectionHeader('Market movers')),
-            SliverToBoxAdapter(child: _moversChips(cs)),
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, i) => _moverTile(i, cs),
-                childCount: 6,
-              ),
-            ),
+            SliverToBoxAdapter(child: _MarketMovers(cs: cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
@@ -75,7 +69,12 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _bottomIndex,
         onDestinationSelected: (i) {
-          if (i == 4) {
+          if (i == 1) {
+            // Redirecting button to Stocks page
+            Navigator.of(context).pushNamed(AdvicePage.routeName, arguments: const AdviceArgs(category: 'stock'));
+            return;
+          }
+          if (i == 2) {
             Navigator.of(context).pushNamed(
               WalletPage.routeName,
               arguments: WalletArgs(name: userName),
@@ -85,11 +84,9 @@ class _HomePageState extends State<HomePage> {
           setState(() => _bottomIndex = i);
         },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.show_chart_outlined), selectedIcon: Icon(Icons.show_chart), label: 'Market'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Portfolio'),
-          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Discover'),
-          NavigationDestination(icon: Icon(Icons.notifications_none), selectedIcon: Icon(Icons.notifications), label: 'Alerts'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Wallet'),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.show_chart_outlined), selectedIcon: Icon(Icons.show_chart), label: 'Stocks'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
@@ -140,25 +137,13 @@ class _HomePageState extends State<HomePage> {
 
   // JustStock logo: gradient circle + wordmark
   Widget _brandLogo(ColorScheme cs) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF17A589), Color(0xFF0E6655)],
-            ),
-          ),
-          child: const Center(child: Icon(Icons.trending_up, size: 16, color: Colors.white)),
-        ),
-        const SizedBox(width: 10),
-        const Text('JustStock', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-      ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.asset(
+        'lib/logo.png',
+        height: 98,
+        fit: BoxFit.contain,
+      ),
     );
   }
 
@@ -168,19 +153,23 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildSegmentedTabs(ColorScheme cs) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: SegmentedButton<String>(
-        segments: const [
-          ButtonSegment(value: 'stocks', label: Text('Stocks')),
-          ButtonSegment(value: 'fno', label: Text('Futures & Options')),
-        ],
-        selected: {_productTab},
-        showSelectedIcon: false,
-        style: ButtonStyle(
-          visualDensity: VisualDensity.comfortable,
-          side: MaterialStatePropertyAll(BorderSide(color: cs.outlineVariant)),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Center(
+        child: IntrinsicWidth(
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'stocks', label: Text('Stocks')),
+              ButtonSegment(value: 'fno', label: Text('Futures & Options')),
+            ],
+            selected: {_productTab},
+            showSelectedIcon: false,
+            style: ButtonStyle(
+              visualDensity: VisualDensity.comfortable,
+              side: MaterialStatePropertyAll(BorderSide(color: cs.outlineVariant)),
+            ),
+            onSelectionChanged: (s) => setState(() => _productTab = s.first),
+          ),
         ),
-        onSelectionChanged: (s) => setState(() => _productTab = s.first),
       ),
     );
   }
@@ -224,11 +213,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildIndicesCarousel(ColorScheme cs) {
-    final items = const [
-      _IndexItem('NIFTY 50', 'NSE', '^NSEI'),
-      _IndexItem('SENSEX', 'BSE', '^BSESN'),
-      _IndexItem('BANK NIFTY', 'NSE', '^NSEBANK'),
-    ];
+    final items = _region == 'global'
+        ? const [
+            _IndexItem('S&P 500', 'NYSE', '^GSPC'),
+            _IndexItem('Dow Jones', 'NYSE', '^DJI'),
+            _IndexItem('NASDAQ', 'NASDAQ', '^IXIC'),
+          ]
+        : const [
+            _IndexItem('NIFTY 50', 'NSE', '^NSEI'),
+            _IndexItem('SENSEX', 'BSE', '^BSESN'),
+            _IndexItem('BANK NIFTY', 'NSE', '^NSEBANK'),
+          ];
     return SizedBox(
       height: 180,
       child: ListView.separated(
@@ -236,7 +231,19 @@ class _HomePageState extends State<HomePage> {
         scrollDirection: Axis.horizontal,
         itemBuilder: (context, i) {
           final item = items[i];
-          return _LiveIndexCard(title: item.title, exchange: item.ex, symbol: item.symbol, cs: cs);
+          return GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushNamed(
+                '/market-detail',
+                arguments: {
+                  'title': item.title,
+                  'exchange': item.ex,
+                  'symbol': item.symbol,
+                },
+              );
+            },
+            child: _LiveIndexCard(title: item.title, exchange: item.ex, symbol: item.symbol, cs: cs),
+          );
         },
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemCount: items.length,
@@ -256,7 +263,19 @@ class _HomePageState extends State<HomePage> {
         scrollDirection: Axis.horizontal,
         itemBuilder: (context, i) {
           final item = items[i];
-          return _LiveIndexCard(title: item.title, exchange: item.ex, symbol: item.symbol, cs: cs);
+          return GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushNamed(
+                '/market-detail',
+                arguments: {
+                  'title': item.title,
+                  'exchange': item.ex,
+                  'symbol': item.symbol,
+                },
+              );
+            },
+            child: _LiveIndexCard(title: item.title, exchange: item.ex, symbol: item.symbol, cs: cs),
+          );
         },
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemCount: items.length,
@@ -431,24 +450,138 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _moverTile(int i, ColorScheme cs) {
-    final green = cs.primary;
-    final names = ['RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ITC', 'LT'];
-    final change = (i.isEven ? 1 : -1) * (0.5 + (i % 3) * 0.3);
-    final price = 1000 + i * 50 + (change * 3);
+    // replaced by live movers widget
+    return const SizedBox.shrink();
+  }
+}
+
+class _MarketMovers extends StatefulWidget {
+  final ColorScheme cs;
+  const _MarketMovers({required this.cs});
+
+  @override
+  State<_MarketMovers> createState() => _MarketMoversState();
+}
+
+class _MarketMoversState extends State<_MarketMovers> {
+  final MarketService _service = MarketService();
+  final _symbols = const [
+    // Popular NSE large/mid caps; append .NS suffix
+    'RELIANCE.NS','TCS.NS','INFY.NS','HDFCBANK.NS','ICICIBANK.NS','SBIN.NS','ITC.NS','LT.NS','HINDUNILVR.NS','ASIANPAINT.NS',
+    'BHARTIARTL.NS','AXISBANK.NS','MARUTI.NS','BAJFINANCE.NS','ADANIENT.NS','WIPRO.NS','TATASTEEL.NS','POWERGRID.NS','ONGC.NS','ULTRACEMCO.NS',
+  ];
+  String _filter = 'gainers'; // gainers | losers | 52high | 52low
+  List<Quote> _list = const [];
+  bool _loading = true;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final quotes = await _service.fetchQuotesBatch(_symbols);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _list = _applyFilter(quotes, _filter).take(8).toList();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  Iterable<Quote> _applyFilter(List<Quote> quotes, String f) {
+    switch (f) {
+      case 'losers':
+        return quotes.where((q) => q.changePct.isFinite).toList()
+          ..sort((a, b) => a.changePct.compareTo(b.changePct));
+      case '52high':
+        return quotes.where((q) => q.fiftyTwoWeekHigh != null && q.price >= (q.fiftyTwoWeekHigh! * 0.995)).toList()
+          ..sort((a, b) => (b.price - (b.fiftyTwoWeekHigh ?? b.price)).compareTo(a.price - (a.fiftyTwoWeekHigh ?? a.price)));
+      case '52low':
+        return quotes.where((q) => q.fiftyTwoWeekLow != null && q.price <= (q.fiftyTwoWeekLow! * 1.005)).toList()
+          ..sort((a, b) => ((a.price - (a.fiftyTwoWeekLow ?? a.price))).compareTo(b.price - (b.fiftyTwoWeekLow ?? b.price)));
+      case 'gainers':
+      default:
+        return quotes.where((q) => q.changePct.isFinite).toList()
+          ..sort((a, b) => b.changePct.compareTo(a.changePct));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = widget.cs;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Wrap(
+            spacing: 8,
+            children: [
+              _chip('Top gainers', 'gainers', cs),
+              _chip('Top losers', 'losers', cs),
+              _chip('52 wk high', '52high', cs),
+              _chip('52 wk low', '52low', cs),
+            ],
+          ),
+        ),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+          ..._list.map((q) => _tile(q, cs)).toList(),
+      ],
+    );
+  }
+
+  Widget _chip(String label, String value, ColorScheme cs) {
+    final selected = _filter == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => setState(() {
+        _filter = value;
+        // reapply current quotes quickly
+        _list = _applyFilter(_list, value).take(8).toList();
+      }),
+      selectedColor: cs.primaryContainer,
+      labelStyle: TextStyle(color: selected ? cs.onPrimaryContainer : null),
+    );
+  }
+
+  Widget _tile(Quote q, ColorScheme cs) {
+    final up = q.change >= 0;
+    final color = up ? cs.primary : Colors.red;
+    final title = (q.name?.isNotEmpty ?? false) ? q.name! : q.symbol;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(backgroundColor: cs.primaryContainer, child: Text(names[i][0])),
-      title: Text(names[i]),
-      subtitle: Text('\u20B9${price.toStringAsFixed(2)}'),
+      leading: CircleAvatar(backgroundColor: cs.primaryContainer, child: Text((title.isNotEmpty ? title[0] : '?'))),
+      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text('₹${q.price.toStringAsFixed(2)}'),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: change >= 0 ? green.withOpacity(0.12) : Colors.red.withOpacity(0.12),
+          color: color.withOpacity(0.12),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Text(
-          '${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}%',
-          style: TextStyle(color: change >= 0 ? green : Colors.red),
+          '${up ? '+' : ''}${q.changePct.toStringAsFixed(2)}%',
+          style: TextStyle(color: color, fontWeight: FontWeight.w600),
         ),
       ),
     );
