@@ -56,9 +56,9 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(child: _sectionHeader('Stocks', trailing: 'View all')),
             SliverToBoxAdapter(child: _buildStocksCarousel(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            SliverToBoxAdapter(child: _promoCard(cs)),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(child: _quickActions(cs)),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            SliverToBoxAdapter(child: _promoCard(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(child: _sectionHeader('Market movers')),
             SliverToBoxAdapter(child: _moversChips(cs)),
@@ -293,31 +293,65 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: cs.primary,
-          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF17A589), Color(0xFF0E6655)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 6)),
+          ],
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            // Left: Text content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('UNIVEST DEMAT', style: TextStyle(color: cs.onPrimary.withOpacity(0.9))),
+                  Text(
+                    'Buy CALL at \u20B9100',
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 6),
-                  Text('Smart Research Smarter Trades',
-                      style: TextStyle(color: cs.onPrimary, fontWeight: FontWeight.w700)),
+                  Text(
+                    'Earn up to \u20B92000',
+                    style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton.tonal(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: cs.primary,
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        AdvicePage.routeName,
+                        arguments: const AdviceArgs(category: 'nifty'),
+                      );
+                    },
+                    child: const Text('Explore Calls'),
+                  ),
                 ],
               ),
             ),
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                backgroundColor: cs.onPrimary,
-                foregroundColor: cs.primary,
-                shape: const StadiumBorder(),
+            const SizedBox(width: 12),
+            // Right: Decorative image area (icon-based placeholder)
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(16),
               ),
-              onPressed: () {},
-              child: const Text('Get 25 FREE trades'),
+              child: const Center(
+                child: Icon(Icons.trending_up, color: Colors.white, size: 42),
+              ),
             ),
           ],
         ),
@@ -699,4 +733,3 @@ class _SymbolSearchDelegate extends SearchDelegate<String> {
     );
   }
 }
-

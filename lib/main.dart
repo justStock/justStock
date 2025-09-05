@@ -5,6 +5,7 @@ import 'screens/wallet/wallet_page.dart';
 import 'screens/advice/advice_page.dart';
 import 'services/otp_service.dart';
 import 'screens/auth/otp_page.dart';
+import 'config.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,7 +26,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: scheme,
-        scaffoldBackgroundColor: const Color(0xFFEFF6F3), // light mint background
+        scaffoldBackgroundColor:
+            const Color(0xFFEFF6F3), // light mint background
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF0F5D50),
@@ -120,11 +122,13 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.trending_up, size: 80, color: theme.colorScheme.primary),
+              Icon(Icons.trending_up,
+                  size: 80, color: theme.colorScheme.primary),
               const SizedBox(height: 16),
               Text(
                 'Just Stock',
-                style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const SizedBox(
@@ -152,7 +156,7 @@ class _AuthPageState extends State<AuthPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final OtpService _otpService = MockOtpService();
-  
+
   get children => null;
 
   @override
@@ -167,6 +171,16 @@ class _AuthPageState extends State<AuthPage> {
     final name = _nameController.text.trim();
     final phoneRaw = _phoneController.text.trim();
     final phoneE164 = '+91' + phoneRaw;
+
+    if (kBypassOtp) {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(
+        HomePage.routeName,
+        arguments: HomeArgs(name: name),
+      );
+      return;
+    }
+
     final session = await _otpService.sendOtp(phoneE164: phoneE164);
     if (!mounted) return;
     Navigator.of(context).push(
@@ -248,7 +262,6 @@ class _AuthPageState extends State<AuthPage> {
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
-            
             ],
           ),
         ),
