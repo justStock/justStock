@@ -245,6 +245,7 @@ class _AuthPageState extends State<AuthPage> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall,
               ),
+              
             ],
           ),
         ),
