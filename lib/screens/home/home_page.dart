@@ -46,17 +46,17 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(child: _buildSegmentedTabs(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
             SliverToBoxAdapter(child: _sectionHeader('Indices', trailing: 'View all')),
-          SliverToBoxAdapter(child: _buildRegionChips(cs)),
-          const SliverToBoxAdapter(child: SizedBox(height: 8)),
-          SliverToBoxAdapter(child: _buildIndicesCarousel(cs)),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          SliverToBoxAdapter(child: _sectionHeader('Commodities', trailing: 'View all')),
-          SliverToBoxAdapter(child: _buildCommoditiesCarousel(cs)),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          SliverToBoxAdapter(child: _sectionHeader('Stocks', trailing: 'View all')),
-          SliverToBoxAdapter(child: _buildStocksCarousel(cs)),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          SliverToBoxAdapter(child: _promoCard(cs)),
+            SliverToBoxAdapter(child: _buildRegionChips(cs)),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            SliverToBoxAdapter(child: _buildIndicesCarousel(cs)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            SliverToBoxAdapter(child: _sectionHeader('Commodities', trailing: 'View all')),
+            SliverToBoxAdapter(child: _buildCommoditiesCarousel(cs)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            SliverToBoxAdapter(child: _sectionHeader('Stocks', trailing: 'View all')),
+            SliverToBoxAdapter(child: _buildStocksCarousel(cs)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            SliverToBoxAdapter(child: _promoCard(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(child: _quickActions(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -127,26 +127,43 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      title: const Text('Market'),
+      title: _brandLogo(cs),
       actions: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              shape: const StadiumBorder(),
-              backgroundColor: cs.onPrimary,
-              foregroundColor: cs.primary,
-            ),
-            onPressed: () {},
-            child: const Text('Buy PRO'),
-          ),
+        IconButton(
+          onPressed: _openSearch,
+          icon: const Icon(Icons.search, color: Colors.white),
         ),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.headset_mic_outlined, color: Colors.white)),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.search, color: Colors.white)),
         const SizedBox(width: 4),
       ],
     );
+  }
+
+  // JustStock logo: gradient circle + wordmark
+  Widget _brandLogo(ColorScheme cs) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF17A589), Color(0xFF0E6655)],
+            ),
+          ),
+          child: const Center(child: Icon(Icons.trending_up, size: 16, color: Colors.white)),
+        ),
+        const SizedBox(width: 10),
+        const Text('JustStock', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+      ],
+    );
+  }
+
+  void _openSearch() {
+    showSearch(context: context, delegate: _SymbolSearchDelegate());
   }
 
   Widget _buildSegmentedTabs(ColorScheme cs) {
@@ -248,7 +265,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildStocksCarousel(ColorScheme cs) {
-    // Common Indian large-cap symbols on NSE (Yahoo suffix .NS)
     final items = const [
       _IndexItem('RELIANCE', 'NSE', 'RELIANCE.NS'),
       _IndexItem('TCS', 'NSE', 'TCS.NS'),
@@ -301,7 +317,7 @@ class _HomePageState extends State<HomePage> {
                 shape: const StadiumBorder(),
               ),
               onPressed: () {},
-              child: const Text('Get 25 FREE trades →'),
+              child: const Text('Get 25 FREE trades'),
             ),
           ],
         ),
@@ -332,7 +348,7 @@ class _HomePageState extends State<HomePage> {
           return InkWell(
             onTap: () {
               Navigator.of(context).pushNamed(
-                '/advice',
+                AdvicePage.routeName,
                 arguments: AdviceArgs(category: category),
               );
             },
@@ -602,3 +618,85 @@ class _IndexItem {
   final String symbol;
   const _IndexItem(this.title, this.ex, this.symbol);
 }
+
+// Simple search delegate to search symbols and fetch a quick quote
+class _SymbolSearchDelegate extends SearchDelegate<String> {
+  final MarketService _service = MarketService();
+
+  final _suggestions = const [
+    '^NSEI', // NIFTY 50
+    '^NSEBANK', // BankNifty
+    '^BSESN', // Sensex
+    'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ITC.NS', 'LT.NS',
+    'GC=F', 'CL=F',
+  ];
+
+  @override
+  String get searchFieldLabel => 'Search symbol (e.g., RELIANCE.NS)';
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      if (query.isNotEmpty)
+        IconButton(onPressed: () => query = '', icon: const Icon(Icons.clear)),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(onPressed: () => close(context, ''), icon: const Icon(Icons.arrow_back));
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    final symbol = query.trim().isEmpty ? _suggestions.first : query.trim();
+    return FutureBuilder<Quote>(
+      future: _service.fetchQuote(symbol),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snap.hasError || !snap.hasData) {
+          return const Center(child: Text('No result'));
+        }
+        final q = snap.data!;
+        final up = q.change >= 0;
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            child: ListTile(
+              leading: CircleAvatar(child: Text(q.symbol.isNotEmpty ? q.symbol[0] : '?')),
+              title: Text(q.symbol),
+              subtitle: Text('₹${q.price.toStringAsFixed(2)}'),
+              trailing: Text(
+                '${up ? '+' : ''}${q.change.toStringAsFixed(2)} (${q.changePct.toStringAsFixed(2)}%)',
+                style: TextStyle(color: up ? Colors.green : Colors.red, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final q = query.toUpperCase();
+    final list = _suggestions.where((s) => s.toUpperCase().contains(q)).toList();
+    return ListView.builder(
+      itemCount: list.length,
+      itemBuilder: (context, i) {
+        final s = list[i];
+        return ListTile(
+          leading: const Icon(Icons.search),
+          title: Text(s),
+          onTap: () {
+            query = s;
+            showResults(context);
+          },
+        );
+      },
+    );
+  }
+}
+

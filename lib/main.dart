@@ -152,6 +152,8 @@ class _AuthPageState extends State<AuthPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final OtpService _otpService = MockOtpService();
+  
+  get children => null;
 
   @override
   void dispose() {
@@ -245,7 +247,8 @@ class _AuthPageState extends State<AuthPage> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall,
               ),
-              
+              const SizedBox(height: 16),
+            
             ],
           ),
         ),
