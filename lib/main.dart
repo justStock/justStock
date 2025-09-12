@@ -255,6 +255,8 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _continue() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final phone = _phoneController.text.trim();
+    // Convert 10-digit Indian number to E.164
+    final phoneE164 = '+91$phone';
     if (kBypassOtp) {
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(
@@ -265,13 +267,13 @@ class _AuthPageState extends State<AuthPage> {
     }
     setState(() => _sendingOtp = true);
     try {
-      final session = await _otpService.sendOtp(phoneE164: phone);
+      final session = await _otpService.sendOtp(phoneE164: phoneE164);
       if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => OtpPage(
             // name omitted; OtpPage will handle default
-            phoneE164: phone,
+            phoneE164: phoneE164,
             session: session,
             service: _otpService,
           ),
