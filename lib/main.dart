@@ -6,6 +6,7 @@ import 'screens/advice/advice_page.dart';
 import 'services/otp_service.dart';
 import 'services/otp_service_rest.dart';
 import 'screens/auth/otp_page.dart';
+import 'package:video_player/video_player.dart';
 import 'config.dart';
 import 'screens/market/detail_page.dart';
 
@@ -96,51 +97,62 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  late final VideoPlayerController _controller;
+  bool _initialized = false;
+  bool _navigated = false;
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(AuthPage.routeName);
-    });
+    _controller = VideoPlayerController.asset('lib/loader.mp4')
+      ..setLooping(false)
+      ..setVolume(0.0)
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() => _initialized = true);
+        _controller.addListener(_onVideoEvent);
+        _controller.play();
+      });
+  }
+
+  void _onVideoEvent() {
+    if (_navigated) return;
+    final v = _controller.value;
+    if (v.isInitialized && !v.isPlaying) {
+      // Consider finished when playback stops after reaching (near) duration
+      final finished = v.position >= v.duration - const Duration(milliseconds: 200);
+      if (finished) {
+        _navigated = true;
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(AuthPage.routeName);
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onVideoEvent);
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.primaryContainer,
-              theme.colorScheme.surface,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.trending_up,
-                  size: 80, color: theme.colorScheme.primary),
-              const SizedBox(height: 16),
-              Text(
-                'Just Stock',
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+      backgroundColor: Colors.black,
+      body: Center(
+        child: _initialized
+            ? AspectRatio(
+                aspectRatio: _controller.value.aspectRatio,
+                child: VideoPlayer(_controller),
+              )
+            : const SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(),
               ),
-              const SizedBox(height: 12),
-              const SizedBox(
-                width: 160,
-                child: LinearProgressIndicator(),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
