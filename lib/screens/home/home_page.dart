@@ -45,15 +45,18 @@ class _HomePageState extends State<HomePage> {
           slivers: [
             SliverToBoxAdapter(child: _buildSegmentedTabs(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
-            SliverToBoxAdapter(child: _sectionHeader('Indices', trailing: 'View all')),
+            SliverToBoxAdapter(
+                child: _sectionHeader('Indices', trailing: 'View all')),
             SliverToBoxAdapter(child: _buildRegionChips(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
             SliverToBoxAdapter(child: _buildIndicesCarousel(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            SliverToBoxAdapter(child: _sectionHeader('Commodities', trailing: 'View all')),
+            SliverToBoxAdapter(
+                child: _sectionHeader('Commodities', trailing: 'View all')),
             SliverToBoxAdapter(child: _buildCommoditiesCarousel(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            SliverToBoxAdapter(child: _sectionHeader('Stocks', trailing: 'View all')),
+            SliverToBoxAdapter(
+                child: _sectionHeader('Stocks', trailing: 'View all')),
             SliverToBoxAdapter(child: _buildStocksCarousel(cs)),
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
             SliverToBoxAdapter(child: _quickActions(cs)),
@@ -71,7 +74,8 @@ class _HomePageState extends State<HomePage> {
         onDestinationSelected: (i) {
           if (i == 1) {
             // Redirecting button to Stocks page
-            Navigator.of(context).pushNamed(AdvicePage.routeName, arguments: const AdviceArgs(category: 'stock'));
+            Navigator.of(context).pushNamed(AdvicePage.routeName,
+                arguments: const AdviceArgs(category: 'stock'));
             return;
           }
           if (i == 2) {
@@ -84,9 +88,18 @@ class _HomePageState extends State<HomePage> {
           setState(() => _bottomIndex = i);
         },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.show_chart_outlined), selectedIcon: Icon(Icons.show_chart), label: 'Stocks'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Home'),
+          NavigationDestination(
+              icon: Icon(Icons.show_chart_outlined),
+              selectedIcon: Icon(Icons.show_chart),
+              label: 'Stocks'),
+          NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile'),
         ],
       ),
     );
@@ -105,7 +118,8 @@ class _HomePageState extends State<HomePage> {
       leading: Padding(
         padding: const EdgeInsets.only(left: 12),
         child: GestureDetector(
-          onTap: () => Navigator.of(context).pushNamed(WalletPage.routeName, arguments: WalletArgs(name: userName)),
+          onTap: () => Navigator.of(context).pushNamed(WalletPage.routeName,
+              arguments: WalletArgs(name: userName)),
           child: ValueListenableBuilder<String?>(
             valueListenable: ProfileService.instance.imagePath,
             builder: (context, path, _) {
@@ -165,7 +179,8 @@ class _HomePageState extends State<HomePage> {
             showSelectedIcon: false,
             style: ButtonStyle(
               visualDensity: VisualDensity.comfortable,
-              side: MaterialStatePropertyAll(BorderSide(color: cs.outlineVariant)),
+              side: MaterialStatePropertyAll(
+                  BorderSide(color: cs.outlineVariant)),
             ),
             onSelectionChanged: (s) => setState(() => _productTab = s.first),
           ),
@@ -179,7 +194,9 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const Spacer(),
           if (trailing != null)
             TextButton(onPressed: () {}, child: Text(trailing)),
@@ -242,7 +259,11 @@ class _HomePageState extends State<HomePage> {
                 },
               );
             },
-            child: _LiveIndexCard(title: item.title, exchange: item.ex, symbol: item.symbol, cs: cs),
+            child: _LiveIndexCard(
+                title: item.title,
+                exchange: item.ex,
+                symbol: item.symbol,
+                cs: cs),
           );
         },
         separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -274,7 +295,11 @@ class _HomePageState extends State<HomePage> {
                 },
               );
             },
-            child: _LiveIndexCard(title: item.title, exchange: item.ex, symbol: item.symbol, cs: cs),
+            child: _LiveIndexCard(
+                title: item.title,
+                exchange: item.ex,
+                symbol: item.symbol,
+                cs: cs),
           );
         },
         separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -299,7 +324,11 @@ class _HomePageState extends State<HomePage> {
         scrollDirection: Axis.horizontal,
         itemBuilder: (context, i) {
           final item = items[i];
-          return _LiveIndexCard(title: item.title, exchange: item.ex, symbol: item.symbol, cs: cs);
+          return _LiveIndexCard(
+              title: item.title,
+              exchange: item.ex,
+              symbol: item.symbol,
+              cs: cs);
         },
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemCount: items.length,
@@ -319,7 +348,10 @@ class _HomePageState extends State<HomePage> {
           ),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 6)),
+            BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 6)),
           ],
         ),
         padding: const EdgeInsets.all(16),
@@ -333,12 +365,18 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     'Buy CALL at \u20B9100',
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Earn up to \u20B92000',
-                    style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.95),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
                   FilledButton.tonal(
@@ -346,7 +384,8 @@ class _HomePageState extends State<HomePage> {
                       backgroundColor: Colors.white,
                       foregroundColor: cs.primary,
                       shape: const StadiumBorder(),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                     ),
                     onPressed: () {
                       Navigator.of(context).pushNamed(
@@ -398,7 +437,9 @@ class _HomePageState extends State<HomePage> {
           final icon = tuple.$1 as IconData;
           final label = tuple.$2 as String;
           final category = tuple.$3 as String;
+
           return InkWell(
+            
             onTap: () {
               Navigator.of(context).pushNamed(
                 AdvicePage.routeName,
@@ -467,8 +508,10 @@ class _MarketMoversState extends State<_MarketMovers> {
   final MarketService _service = MarketService();
   final _symbols = const [
     // Popular NSE large/mid caps; append .NS suffix
-    'RELIANCE.NS','TCS.NS','INFY.NS','HDFCBANK.NS','ICICIBANK.NS','SBIN.NS','ITC.NS','LT.NS','HINDUNILVR.NS','ASIANPAINT.NS',
-    'BHARTIARTL.NS','AXISBANK.NS','MARUTI.NS','BAJFINANCE.NS','ADANIENT.NS','WIPRO.NS','TATASTEEL.NS','POWERGRID.NS','ONGC.NS','ULTRACEMCO.NS',
+    'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ICICIBANK.NS',
+    'SBIN.NS', 'ITC.NS', 'LT.NS', 'HINDUNILVR.NS', 'ASIANPAINT.NS',
+    'BHARTIARTL.NS', 'AXISBANK.NS', 'MARUTI.NS', 'BAJFINANCE.NS', 'ADANIENT.NS',
+    'WIPRO.NS', 'TATASTEEL.NS', 'POWERGRID.NS', 'ONGC.NS', 'ULTRACEMCO.NS',
   ];
   String _filter = 'gainers'; // gainers | losers | 52high | 52low
   List<Quote> _list = const [];
@@ -508,11 +551,21 @@ class _MarketMoversState extends State<_MarketMovers> {
         return quotes.where((q) => q.changePct.isFinite).toList()
           ..sort((a, b) => a.changePct.compareTo(b.changePct));
       case '52high':
-        return quotes.where((q) => q.fiftyTwoWeekHigh != null && q.price >= (q.fiftyTwoWeekHigh! * 0.995)).toList()
-          ..sort((a, b) => (b.price - (b.fiftyTwoWeekHigh ?? b.price)).compareTo(a.price - (a.fiftyTwoWeekHigh ?? a.price)));
+        return quotes
+            .where((q) =>
+                q.fiftyTwoWeekHigh != null &&
+                q.price >= (q.fiftyTwoWeekHigh! * 0.995))
+            .toList()
+          ..sort((a, b) => (b.price - (b.fiftyTwoWeekHigh ?? b.price))
+              .compareTo(a.price - (a.fiftyTwoWeekHigh ?? a.price)));
       case '52low':
-        return quotes.where((q) => q.fiftyTwoWeekLow != null && q.price <= (q.fiftyTwoWeekLow! * 1.005)).toList()
-          ..sort((a, b) => ((a.price - (a.fiftyTwoWeekLow ?? a.price))).compareTo(b.price - (b.fiftyTwoWeekLow ?? b.price)));
+        return quotes
+            .where((q) =>
+                q.fiftyTwoWeekLow != null &&
+                q.price <= (q.fiftyTwoWeekLow! * 1.005))
+            .toList()
+          ..sort((a, b) => ((a.price - (a.fiftyTwoWeekLow ?? a.price)))
+              .compareTo(b.price - (b.fiftyTwoWeekLow ?? b.price)));
       case 'gainers':
       default:
         return quotes.where((q) => q.changePct.isFinite).toList()
@@ -570,7 +623,9 @@ class _MarketMoversState extends State<_MarketMovers> {
     final title = (q.name?.isNotEmpty ?? false) ? q.name! : q.symbol;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(backgroundColor: cs.primaryContainer, child: Text((title.isNotEmpty ? title[0] : '?'))),
+      leading: CircleAvatar(
+          backgroundColor: cs.primaryContainer,
+          child: Text((title.isNotEmpty ? title[0] : '?'))),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text('₹${q.price.toStringAsFixed(2)}'),
       trailing: Container(
@@ -593,7 +648,11 @@ class _LiveIndexCard extends StatefulWidget {
   final String exchange;
   final String symbol;
   final ColorScheme cs;
-  const _LiveIndexCard({required this.title, required this.exchange, required this.symbol, required this.cs});
+  const _LiveIndexCard(
+      {required this.title,
+      required this.exchange,
+      required this.symbol,
+      required this.cs});
 
   @override
   State<_LiveIndexCard> createState() => _LiveIndexCardState();
@@ -620,11 +679,12 @@ class _LiveIndexCardState extends State<_LiveIndexCard> {
         _livePrice = q.price;
         _liveChange = q.change;
         _livePct = q.changePct;
-        if (_closes.isNotEmpty) {
-          final list = List<double>.from(_closes)..add(q.price);
-          if (list.length > 60) list.removeAt(0);
-          _closes = list;
-        }
+        // Seed sparkline even if initial chart failed; then keep a rolling window
+        final list = _closes.isEmpty
+            ? <double>[q.price]
+            : (List<double>.from(_closes)..add(q.price));
+        if (list.length > 60) list.removeAt(0);
+        _closes = list;
       });
     });
   }
@@ -685,9 +745,12 @@ class _LiveIndexCardState extends State<_LiveIndexCard> {
             children: [
               _titleRow(cs),
               const SizedBox(height: 6),
-              SizedBox(height: 56, child: _Sparkline(data: _closes, color: green)),
+              SizedBox(
+                  height: 56, child: _Sparkline(data: _closes, color: green)),
               const SizedBox(height: 8),
-              Text(last.toStringAsFixed(2), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              Text(last.toStringAsFixed(2),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 2),
               Text(
                 '${ch >= 0 ? '+' : ''}${ch.toStringAsFixed(2)} (${pct.toStringAsFixed(2)}%)',
@@ -711,7 +774,8 @@ class _LiveIndexCardState extends State<_LiveIndexCard> {
             color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(widget.exchange, style: TextStyle(fontSize: 11, color: cs.onPrimaryContainer)),
+          child: Text(widget.exchange,
+              style: TextStyle(fontSize: 11, color: cs.onPrimaryContainer)),
         ),
       ],
     );
@@ -743,7 +807,7 @@ class _SparkPainter extends CustomPainter {
     final minV = data.reduce((a, b) => a < b ? a : b);
     final maxV = data.reduce((a, b) => a > b ? a : b);
     final range = (maxV - minV).clamp(0.0001, double.infinity);
-    final dx = size.width / (data.length - 1);
+    final dx = data.length > 1 ? size.width / (data.length - 1) : 0.0;
 
     final path = Path();
     for (var i = 0; i < data.length; i++) {
@@ -811,7 +875,9 @@ class _SymbolSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget? buildLeading(BuildContext context) {
-    return IconButton(onPressed: () => close(context, ''), icon: const Icon(Icons.arrow_back));
+    return IconButton(
+        onPressed: () => close(context, ''),
+        icon: const Icon(Icons.arrow_back));
   }
 
   @override
@@ -832,12 +898,15 @@ class _SymbolSearchDelegate extends SearchDelegate<String> {
           padding: const EdgeInsets.all(16.0),
           child: Card(
             child: ListTile(
-              leading: CircleAvatar(child: Text(q.symbol.isNotEmpty ? q.symbol[0] : '?')),
+              leading: CircleAvatar(
+                  child: Text(q.symbol.isNotEmpty ? q.symbol[0] : '?')),
               title: Text(q.symbol),
               subtitle: Text('₹${q.price.toStringAsFixed(2)}'),
               trailing: Text(
                 '${up ? '+' : ''}${q.change.toStringAsFixed(2)} (${q.changePct.toStringAsFixed(2)}%)',
-                style: TextStyle(color: up ? Colors.green : Colors.red, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: up ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -849,7 +918,8 @@ class _SymbolSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) {
     final q = query.toUpperCase();
-    final list = _suggestions.where((s) => s.toUpperCase().contains(q)).toList();
+    final list =
+        _suggestions.where((s) => s.toUpperCase().contains(q)).toList();
     return ListView.builder(
       itemCount: list.length,
       itemBuilder: (context, i) {

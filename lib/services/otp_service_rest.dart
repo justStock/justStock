@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'otp_service.dart';
 import '../config.dart';
 
@@ -12,25 +13,41 @@ class RestOtpService implements OtpService {
 
   @override
   Future<OtpSession> sendOtp({required String phoneE164}) async {
-    final uri = Uri.parse('$baseUrl/auth/send-otp');
-    final res = await _client.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'phone': phoneE164}));
+    final uri = Uri.parse('$baseUrl/auth/requestOtp');
+    final phonePlain = phoneE164.replaceAll(RegExp(r'[^0-9]'), '');
+    final body = {'phone': phonePlain};
+    if (kDebugMode) debugPrint('POST $uri body=$body');
+    final res = await _client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
     if (res.statusCode != 200) {
-      throw Exception('Failed to send OTP: ${res.statusCode}');
+      final msg = res.body.isNotEmpty ? res.body : res.reasonPhrase ?? 'Unknown error';
+      throw Exception('Failed to send OTP (${res.statusCode}): $msg');
     }
-    final json = jsonDecode(res.body);
-    return OtpSession(id: json['sessionId'], debugCode: (json['debug'] ?? '').toString());
+    // Backend ties OTP to phone; use phone as the session id
+    String debugCode = '';
+    try {
+      final json = jsonDecode(res.body);
+      debugCode = (json['debug'] ?? json['otp'] ?? '').toString();
+    } catch (_) {}
+    return OtpSession(id: phoneE164, debugCode: debugCode);
   }
 
   @override
   Future<bool> verifyOtp({required String sessionId, required String code}) async {
-    final uri = Uri.parse('$baseUrl/auth/verify-otp');
-    final res = await _client.post(uri,
-        headers: {'Content-Type': 'application/json'}, body: jsonEncode({'sessionId': sessionId, 'code': code}));
+    final uri = Uri.parse('$baseUrl/auth/verifyOtp');
+    final phonePlain = sessionId.replaceAll(RegExp(r'[^0-9]'), '');
+    final body = {'phone': phonePlain, 'otp': code};
+    if (kDebugMode) debugPrint('POST $uri body=$body');
+    final res = await _client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
     if (res.statusCode != 200) return false;
-    // Optionally store token for authenticated calls
-    // final json = jsonDecode(res.body);
-    // final token = json['token'];
+    // Optionally parse token or user data here
     return true;
   }
 }
-

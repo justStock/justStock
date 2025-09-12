@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ChartData {
   final List<DateTime> times;
@@ -30,6 +31,72 @@ class MarketService {
   final http.Client _client;
   MarketService({http.Client? client}) : _client = client ?? http.Client();
 
+  Future<http.Response> _getWithCors(Uri target) async {
+    // Non-web: no CORS, hit target directly
+    if (!kIsWeb) {
+      return _client.get(target, headers: {
+        'User-Agent':
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+        'Accept': 'application/json,text/plain,*/*',
+      });
+    }
+
+    // Web: prefer local API endpoints
+    final localBase = Uri.parse('http://localhost:8089');
+    if (target.path.startsWith('/v8/finance/chart/')) {
+      final symbol = target.pathSegments.last;
+      final qp = Map<String, String>.from(target.queryParameters);
+      final range = qp['range'] ?? '1d';
+      final interval = qp['interval'] ?? '1m';
+      final local = localBase.replace(
+        path: '/api/chart',
+        queryParameters: {
+          'symbol': symbol,
+          'range': range,
+          'interval': interval,
+        },
+      );
+      try {
+        final res = await _client
+            .get(local, headers: {'Accept': 'application/json,text/plain,*/*'})
+            .timeout(const Duration(seconds: 6));
+        if (res.statusCode == 200) return res;
+      } catch (_) {}
+    } else if (target.path == '/v7/finance/quote') {
+      final symbols = target.queryParameters['symbols'];
+      if (symbols != null && symbols.isNotEmpty) {
+        final local = localBase.replace(
+          path: '/api/quotes',
+          queryParameters: {'symbols': symbols},
+        );
+        try {
+          final res = await _client
+              .get(local, headers: {'Accept': 'application/json,text/plain,*/*'})
+              .timeout(const Duration(seconds: 6));
+          if (res.statusCode == 200) return res;
+        } catch (_) {}
+      }
+    }
+
+    // Web fallback: public CORS passthrough or direct (likely CORS blocked)
+    final candidates = <Uri>[
+      Uri.parse('https://cors.isomorphic-git.org/${target.toString()}'),
+    ];
+    for (final u in candidates) {
+      try {
+        final res = await _client
+            .get(u, headers: {'Accept': 'application/json,text/plain,*/*'})
+            .timeout(const Duration(seconds: 6));
+        if (res.statusCode == 200) return res;
+        // If not OK, try next candidate
+      } catch (_) {
+        // try next
+      }
+    }
+    // Last attempt: direct (may be blocked by CORS)
+    return _client.get(target, headers: {'Accept': 'application/json,text/plain,*/*'});
+  }
+
   /// Fetches intraday chart data from Yahoo Finance public API.
   /// Example symbols:
   ///  - NIFTY 50: ^NSEI
@@ -41,9 +108,16 @@ class MarketService {
     String range = '1d',
     String interval = '1m',
   }) async {
-    final uri = Uri.parse(
-        'https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=$range&interval=$interval');
-    final res = await _client.get(uri);
+    final encSymbol = Uri.encodeComponent(symbol);
+    final target = Uri.https(
+      'query1.finance.yahoo.com',
+      '/v8/finance/chart/$encSymbol',
+      {
+        'range': range,
+        'interval': interval,
+      },
+    );
+    final res = await _getWithCors(target);
     if (res.statusCode != 200) {
       throw Exception('Failed to load $symbol: ${res.statusCode}');
     }
@@ -106,8 +180,12 @@ class MarketService {
 
   // Lightweight quote endpoint for near-realtime price.
   Future<Quote> fetchQuote(String symbol) async {
-    final uri = Uri.parse('https://query1.finance.yahoo.com/v7/finance/quote?symbols=$symbol');
-    final res = await _client.get(uri);
+    final target = Uri.https(
+      'query1.finance.yahoo.com',
+      '/v7/finance/quote',
+      {'symbols': symbol},
+    );
+    final res = await _getWithCors(target);
     if (res.statusCode != 200) {
       throw Exception('Failed to load quote for $symbol: ${res.statusCode}');
     }
@@ -144,8 +222,12 @@ class MarketService {
   Future<List<Quote>> fetchQuotesBatch(List<String> symbols) async {
     if (symbols.isEmpty) return [];
     final joined = symbols.join(',');
-    final uri = Uri.parse('https://query1.finance.yahoo.com/v7/finance/quote?symbols=$joined');
-    final res = await _client.get(uri);
+    final target = Uri.https(
+      'query1.finance.yahoo.com',
+      '/v7/finance/quote',
+      {'symbols': joined},
+    );
+    final res = await _getWithCors(target);
     if (res.statusCode != 200) {
       throw Exception('Failed batch quotes: ${res.statusCode}');
     }

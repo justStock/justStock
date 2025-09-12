@@ -53,11 +53,12 @@ class _MarketDetailPageState extends State<MarketDetailPage> {
         _liveChange = q.change;
         _livePct = q.changePct;
         _quote = q;
-        if (_closes.isNotEmpty) {
-          final list = List<double>.from(_closes)..add(q.price);
-          if (list.length > 240) list.removeAt(0);
-          _closes = list;
-        }
+        // Seed sparkline even if initial chart failed; then keep a rolling window
+        final list = _closes.isEmpty
+            ? <double>[q.price]
+            : (List<double>.from(_closes)..add(q.price));
+        if (list.length > 240) list.removeAt(0);
+        _closes = list;
       });
     });
   }
@@ -372,7 +373,7 @@ class _BigSparkPainter extends CustomPainter {
     final minV = data.reduce((a, b) => a < b ? a : b);
     final maxV = data.reduce((a, b) => a > b ? a : b);
     final range = (maxV - minV).clamp(0.0001, double.infinity);
-    final dx = size.width / (data.length - 1);
+    final dx = data.length > 1 ? size.width / (data.length - 1) : 0.0;
 
     // grid lines
     final gridPaint = Paint()

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'screens/home/home_page.dart';
 import 'screens/wallet/wallet_page.dart';
 import 'screens/advice/advice_page.dart';
 import 'services/otp_service.dart';
 import 'services/otp_service_rest.dart';
 import 'screens/auth/otp_page.dart';
-import 'package:video_player/video_player.dart';
 import 'config.dart';
 import 'screens/market/detail_page.dart';
 
@@ -96,63 +96,124 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  late final VideoPlayerController _controller;
-  bool _initialized = false;
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   bool _navigated = false;
+  Timer? _navTimer;
+  bool _animReady = false;
+  late final AnimationController _controller;
+  late final Animation<double> _tilt;
+  late final Animation<double> _bob;
+  late final Animation<double> _glow;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset('lib/loader.mp4')
-      ..setLooping(false)
-      ..setVolume(0.0)
-      ..initialize().then((_) {
-        if (!mounted) return;
-        setState(() => _initialized = true);
-        _controller.addListener(_onVideoEvent);
-        _controller.play();
-      });
+    // Keep splash visible briefly so it’s noticeable on Android/iOS
+    _navTimer = Timer(const Duration(milliseconds: 1000), _goNext);
   }
 
-  void _onVideoEvent() {
-    if (_navigated) return;
-    final v = _controller.value;
-    if (v.isInitialized && !v.isPlaying) {
-      // Consider finished when playback stops after reaching (near) duration
-      final finished = v.position >= v.duration - const Duration(milliseconds: 200);
-      if (finished) {
-        _navigated = true;
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed(AuthPage.routeName);
-        }
-      }
-    }
+  void _goNext() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (_, __, ___) => const AuthPage(),
+        transitionsBuilder: (_, animation, __, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onVideoEvent);
-    _controller.dispose();
+    _navTimer?.cancel();
+    if (_animReady) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (!_animReady) {
+      _controller =
+          AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
+            ..repeat(reverse: true);
+      _tilt = Tween<double>(begin: -0.03, end: 0.03)
+          .chain(CurveTween(curve: Curves.easeInOut))
+          .animate(_controller);
+      _bob = Tween<double>(begin: -6, end: 6)
+          .chain(CurveTween(curve: Curves.easeInOut))
+          .animate(_controller);
+      _glow = Tween<double>(begin: 0.3, end: 0.85)
+          .chain(CurveTween(curve: Curves.easeInOut))
+          .animate(_controller);
+      _animReady = true;
+    }
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: _initialized
-            ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
-              )
-            : const SizedBox(
-                width: 48,
-                height: 48,
-                child: CircularProgressIndicator(),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated image with subtle wobble/bob and glow
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Opacity(
+                        opacity: _glow.value * 0.5,
+                        child: Container(
+                          width: 170,
+                          height: 170,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Colors.amber.withOpacity(0.35),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Transform.translate(
+                        offset: Offset(0, _bob.value),
+                        child: Transform.rotate(
+                          angle: _tilt.value,
+                          child: child,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                child: const Image(
+                  image: AssetImage('lib/logo.png'),
+                  width: 150,
+                  fit: BoxFit.contain,
+                ),
               ),
+              const SizedBox(height: 28),
+              const SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3.0,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -168,15 +229,14 @@ class AuthPage extends StatefulWidget {
 
 class _AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   late final OtpService _otpService;
+  bool _sendingOtp = false;
 
   get children => null;
 
   @override
   void dispose() {
-    _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -194,31 +254,37 @@ class _AuthPageState extends State<AuthPage> {
 
   Future<void> _continue() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final name = _nameController.text.trim();
-    final phoneRaw = _phoneController.text.trim();
-    final phoneE164 = '+91' + phoneRaw;
-
+    final phone = _phoneController.text.trim();
     if (kBypassOtp) {
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(
         HomePage.routeName,
-        arguments: HomeArgs(name: name),
+        // No name collected; HomePage will default to 'Trader'
       );
       return;
     }
-
-    final session = await _otpService.sendOtp(phoneE164: phoneE164);
-    if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => OtpPage(
-          name: name,
-          phoneE164: phoneE164,
-          session: session,
-          service: _otpService,
+    setState(() => _sendingOtp = true);
+    try {
+      final session = await _otpService.sendOtp(phoneE164: phone);
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OtpPage(
+            // name omitted; OtpPage will handle default
+            phoneE164: phone,
+            session: session,
+            service: _otpService,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send OTP: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _sendingOtp = false);
+    }
   }
 
   @override
@@ -259,27 +325,13 @@ class _AuthPageState extends State<AuthPage> {
                 },
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'Enter your name',
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  final v = value?.trim() ?? '';
-                  if (v.isEmpty) return 'Name is required';
-                  if (v.length < 2) return 'Enter a valid name';
-                  return null;
-                },
-              ),
               const SizedBox(height: 20),
               FilledButton.icon(
-                onPressed: _continue,
-                icon: const Icon(Icons.login),
-                label: const Text('Continue'),
+                onPressed: _sendingOtp ? null : _continue,
+                icon: const Icon(Icons.sms),
+                label: _sendingOtp
+                    ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Send OTP'),
               ),
               const SizedBox(height: 8),
               Text(

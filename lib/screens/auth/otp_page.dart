@@ -5,12 +5,12 @@ import '../../services/otp_service.dart';
 import '../home/home_page.dart';
 
 class OtpPage extends StatefulWidget {
-  final String name;
+  final String? name;
   final String phoneE164;
   final OtpSession session;
   final OtpService service;
 
-  const OtpPage({super.key, required this.name, required this.phoneE164, required this.session, required this.service});
+  const OtpPage({super.key, this.name, required this.phoneE164, required this.session, required this.service});
 
   @override
   State<OtpPage> createState() => _OtpPageState();
@@ -46,9 +46,10 @@ class _OtpPageState extends State<OtpPage> {
     if (!mounted) return;
     setState(() => _verifying = false);
     if (ok) {
+      final homeName = (widget.name?.trim().isNotEmpty ?? false) ? widget.name!.trim() : 'Trader';
       Navigator.of(context).pushReplacementNamed(
         HomePage.routeName,
-        arguments: HomeArgs(name: widget.name),
+        arguments: HomeArgs(name: homeName),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid OTP, try again')));

@@ -36,6 +36,7 @@ class _AdvicePageState extends State<AdvicePage> {
     _stockController.dispose();
     super.dispose();
   }
+  
 
   Future<void> _payAndFetch() async {
     final args = ModalRoute.of(context)?.settings.arguments as AdviceArgs?;
